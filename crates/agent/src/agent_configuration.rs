@@ -164,7 +164,16 @@ impl AgentConfiguration {
                                     .size(IconSize::Small)
                                     .color(Color::Muted),
                             )
-                            .child(Label::new(provider_name.clone()).size(LabelSize::Large)),
+                            .child(Label::new(provider_name.clone()).size(LabelSize::Large))
+                            .when(provider.is_authenticated(cx), |parent| {
+                                parent.child(
+                                    h_flex().ml_1().child(
+                                        Icon::new(IconName::Check)
+                                            .size(IconSize::Medium)
+                                            .color(Color::Success),
+                                    ),
+                                )
+                            }),
                     )
                     .child(
                         h_flex()
@@ -179,7 +188,6 @@ impl AgentConfiguration {
                                     .icon_position(IconPosition::Start)
                                     .icon(IconName::Plus)
                                     .icon_size(IconSize::Small)
-                                    .style(ButtonStyle::Filled)
                                     .layer(ElevationIndex::ModalSurface)
                                     .label_size(LabelSize::Small)
                                     .on_click(cx.listener({
@@ -189,7 +197,7 @@ impl AgentConfiguration {
                                                 provider.clone(),
                                             ))
                                         }
-                                    }))
+                                    })),
                                 )
                             })
                             .child(
@@ -198,7 +206,12 @@ impl AgentConfiguration {
                                     "",
                                 )
                                 .style(ButtonStyle::Transparent)
-                                .icon(if is_expanded { IconName::ChevronUp } else { IconName::ChevronDown })
+                                .selected_style(ButtonStyle::Transparent)
+                                .icon(if is_expanded {
+                                    IconName::ChevronUp
+                                } else {
+                                    IconName::ChevronDown
+                                })
                                 .icon_size(IconSize::Small)
                                 .icon_color(Color::Muted)
                                 .on_click(cx.listener({
@@ -210,17 +223,15 @@ impl AgentConfiguration {
                                             .or_insert(false);
                                         *is_expanded = !*is_expanded;
                                     }
-                                }))
-                            )
+                                })),
+                            ),
                     ),
             )
-            .when(is_expanded, |parent| {
-                match configuration_view {
-                    Some(configuration_view) => parent.child(configuration_view),
-                    None => parent.child(div().child(Label::new(format!(
-                        "No configuration view for {provider_name}",
-                    )))),
-                }
+            .when(is_expanded, |parent| match configuration_view {
+                Some(configuration_view) => parent.child(configuration_view),
+                None => parent.child(div().child(Label::new(format!(
+                    "No configuration view for {provider_name}",
+                )))),
             })
     }
 
