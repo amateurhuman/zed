@@ -143,7 +143,7 @@ impl AgentConfiguration {
             .expanded_provider_configurations
             .get(&provider_id)
             .copied()
-            .unwrap_or(true);
+            .unwrap_or(false);
 
         let border_color = cx.theme().colors().border.opacity(0.6);
 
@@ -160,50 +160,59 @@ impl AgentConfiguration {
                         h_flex()
                             .gap_2()
                             .child(
-                                Disclosure::new(
-                                    SharedString::from(format!("provider-disclosure-{}", provider_id_str)),
-                                    is_expanded,
-                                )
-                                .on_click(cx.listener({
-                                    let provider_id = provider_id.clone();
-                                    move |this, _event, _window, _cx| {
-                                        let is_expanded = this
-                                            .expanded_provider_configurations
-                                            .entry(provider_id.clone())
-                                            .or_insert(true);
-                                        *is_expanded = !*is_expanded;
-                                    }
-                                })),
-                            )
-                            .child(
                                 Icon::new(provider.icon())
                                     .size(IconSize::Small)
                                     .color(Color::Muted),
                             )
                             .child(Label::new(provider_name.clone()).size(LabelSize::Large)),
                     )
-                    .when(provider.is_authenticated(cx), |parent| {
-                        parent.child(
-                            Button::new(
-                                SharedString::from(format!("new-thread-{provider_id_str}")),
-                                "Start New Thread",
+                    .child(
+                        h_flex()
+                            .gap_2()
+                            .items_center()
+                            .when(provider.is_authenticated(cx), |parent| {
+                                parent.child(
+                                    Button::new(
+                                        SharedString::from(format!("new-thread-{provider_id_str}")),
+                                        "Start New Thread",
+                                    )
+                                    .icon_position(IconPosition::Start)
+                                    .icon(IconName::Plus)
+                                    .icon_size(IconSize::Small)
+                                    .style(ButtonStyle::Filled)
+                                    .layer(ElevationIndex::ModalSurface)
+                                    .label_size(LabelSize::Small)
+                                    .on_click(cx.listener({
+                                        let provider = provider.clone();
+                                        move |_this, _event, _window, cx| {
+                                            cx.emit(AssistantConfigurationEvent::NewThread(
+                                                provider.clone(),
+                                            ))
+                                        }
+                                    }))
+                                )
+                            })
+                            .child(
+                                Button::new(
+                                    SharedString::from(format!("toggle-{provider_id_str}")),
+                                    "",
+                                )
+                                .style(ButtonStyle::Transparent)
+                                .icon(if is_expanded { IconName::ChevronUp } else { IconName::ChevronDown })
+                                .icon_size(IconSize::Small)
+                                .icon_color(Color::Muted)
+                                .on_click(cx.listener({
+                                    let provider_id = provider_id.clone();
+                                    move |this, _event, _window, _cx| {
+                                        let is_expanded = this
+                                            .expanded_provider_configurations
+                                            .entry(provider_id.clone())
+                                            .or_insert(false);
+                                        *is_expanded = !*is_expanded;
+                                    }
+                                }))
                             )
-                            .icon_position(IconPosition::Start)
-                            .icon(IconName::Plus)
-                            .icon_size(IconSize::Small)
-                            .style(ButtonStyle::Filled)
-                            .layer(ElevationIndex::ModalSurface)
-                            .label_size(LabelSize::Small)
-                            .on_click(cx.listener({
-                                let provider = provider.clone();
-                                move |_this, _event, _window, cx| {
-                                    cx.emit(AssistantConfigurationEvent::NewThread(
-                                        provider.clone(),
-                                    ))
-                                }
-                            })),
-                        )
-                    }),
+                    ),
             )
             .when(is_expanded, |parent| {
                 match configuration_view {
